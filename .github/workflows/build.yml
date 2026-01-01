@@ -1,0 +1,176 @@
+name: Build a Windows Tcl/Tk Distribution with BAWT
+
+on:
+  workflow_dispatch:
+    inputs:
+      tcl-versions:
+        required: true
+        type: choice
+        options:
+          - '["8.6.17"]'
+          - '["9.0.3"]'
+          - '["8.6.17","9.0.3"]'
+        default: '["9.0.3"]'
+      platform:
+        required: true
+        type: choice
+        options:
+          - 'windows'
+          - 'linux'
+          - 'macos'
+          - 'all'
+      architectures:
+        description: 'Target architectures'
+        required: true
+        type: choice
+        options:
+          - '["x64"]'
+          - '["x86"]'
+          - '["x86, x64"]'
+        default: '["x86, x64"]'
+      setup-file:
+        description: 'BAWT Setup file to use'
+        type: choice
+        required: true
+        options:
+          - 'Setup/Tcl_Basic.bawt'
+          - 'Setup/Tcl_Extended.bawt'
+        default: 'Setup/Tcl_Basic.bawt'
+
+jobs:
+  build-windows:
+    if: github.event.inputs.platform == 'windows' || github.event.inputs.platform == 'all'
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        architecture: ${{ fromJSON(github.event.inputs.architectures) }}
+        tcl-version: ${{ fromJSON(github.event.inputs.tcl-versions) }}
+
+    steps:
+    - name: Download BAWT framework
+      run: |
+        curl -L -o Bawt-3.2.0.zip https://www.tcl3d.org/bawt/download/Bawt-3.2.0.zip
+        Expand-Archive -Path Bawt-3.2.0.zip -DestinationPath .
+      shell: pwsh
+
+    - name: Download MSYS/MinGW
+      run: |
+        cd Bawt-3.2.0/Bootstrap-Windows
+        curl -L -o gcc14.2.0_x86_64-w64-mingw32.7z https://www.tcl3d.org/bawt/download/gcc14.2.0_x86_64-w64-mingw32.7z
+        cd ../..
+      shell: pwsh
+
+    - name: Build Tcl/Tk Distribution
+      run: |
+        cd Bawt-3.2.0
+        tclkit-win32-intel.exe Bawt.tcl --rootdir ../BawtBuild --architecture ${{ matrix.architecture }} --compiler gcc --numjobs 4 --update ${{ github.event.inputs.setup-file }} --tclversion ${{ matrix.tcl-version }} all
+      shell: cmd
+
+    - name: Upload build logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-logs-windows-${{ matrix.architecture }}
+        path: BawtBuild/Windows/${{ matrix.architecture }}/Logs/
+
+    - name: Upload distribution
+      uses: actions/upload-artifact@v4
+      with:
+        name: tcl-distribution-windows-${{ matrix.tcl-version }} ${{ matrix.architecture }}
+        path: BawtBuild/Windows/${{ matrix.tcl-version }}/${{ matrix.architecture }}/Release/Distribution/
+
+  build-linux:
+    if: github.event.inputs.platform == 'linux' || github.event.inputs.platform == 'all'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        architecture: [64]
+
+    steps:
+    - name: Checkout BAWT repository
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential curl p7zip-full zip \
+          libx11-dev libcups2-dev libcairo2-dev libglx-dev \
+          libglu1-mesa-dev libasound2-dev
+
+    - name: Download BAWT framework
+      run: |
+        curl -L -o Bawt-3.2.0.zip https://www.tcl3d.org/bawt/download/Bawt-3.2.0.zip
+        unzip Bawt-3.2.0.zip
+
+    - name: Set permissions
+      run: |
+        cd Bawt-3.2.0
+        chmod u+x Build*.sh
+        chmod u+x tclkit*
+
+    - name: Build Tcl/Tk Distribution
+      run: |
+        cd Bawt-3.2.0
+        SETUP_FILE="${{ github.event.inputs.setup_file }}"
+        if [ -z "$SETUP_FILE" ]; then
+          SETUP_FILE="Setup/Tcl_Basic.bawt"
+        fi
+        ./Build-Linux.sh intel ${{ matrix.architecture }} "$SETUP_FILE" update
+
+    - name: Upload build logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-logs-linux-${{ matrix.architecture }}
+        path: BawtBuild/Linux/x${{ matrix.architecture }}/Logs/
+
+    - name: Upload distribution
+      uses: actions/upload-artifact@v4
+      with:
+        name: tcl-distribution-linux-${{ matrix.architecture }}
+        path: BawtBuild/Linux/x${{ matrix.architecture }}/Release/Distribution/
+
+  build-macos:
+    if: github.event.inputs.platform == 'macos' || github.event.inputs.platform == 'all'
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout BAWT repository
+      uses: actions/checkout@v4
+
+    - name: Install XCode Command Line Tools
+      run: |
+        xcode-select --install 2>/dev/null || true
+
+    - name: Download BAWT framework
+      run: |
+        curl -L -o Bawt-3.2.0.zip https://www.tcl3d.org/bawt/download/Bawt-3.2.0.zip
+        unzip Bawt-3.2.0.zip
+
+    - name: Set permissions
+      run: |
+        cd Bawt-3.2.0
+        chmod u+x Build*.sh
+        chmod u+x tclkit*
+
+    - name: Build Tcl/Tk Distribution
+      run: |
+        cd Bawt-3.2.0
+        SETUP_FILE="${{ github.event.inputs.setup_file }}"
+        if [ -z "$SETUP_FILE" ]; then
+          SETUP_FILE="Setup/Tcl_Basic.bawt"
+        fi
+        ./Build-Darwin.sh universal "$SETUP_FILE" update
+
+    - name: Upload build logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-logs-macos
+        path: BawtBuild/Darwin/x64/Logs/
+
+    - name: Upload distribution
+      uses: actions/upload-artifact@v4
+      with:
+        name: tcl-distribution-macos
+        path: BawtBuild/Darwin/x64/Release/Distribution/
