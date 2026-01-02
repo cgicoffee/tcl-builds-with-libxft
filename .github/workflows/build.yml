@@ -65,7 +65,7 @@ jobs:
     - name: Build Tcl/Tk Distribution
       run: |
         cd Bawt-3.2.0
-        tclkit-win32-intel.exe Bawt.tcl --rootdir ../BawtBuild --architecture ${{ matrix.architecture }} --compiler gcc --numjobs 4 --update ${{ github.event.inputs.setup-file }} --tclversion ${{ matrix.tcl-version }} all
+        tclkit-win32-intel.exe Bawt.tcl --rootdir ../BawtBuild/${{ matrix.tcl-version }} --architecture ${{ matrix.architecture }} --compiler gcc --numjobs 4 --update ${{ github.event.inputs.setup-file }} --tclversion ${{ matrix.tcl-version }} all
       shell: cmd
 
     - name: Upload build logs
@@ -73,13 +73,13 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: build-logs-windows-${{ matrix.architecture }}
-        path: BawtBuild/Windows/${{ matrix.architecture }}/Logs/
+        path: BawtBuild/${{ matrix.tcl-version }}/Windows/${{ matrix.architecture }}/Logs/
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
         name: tcl-distribution-windows-${{ matrix.tcl-version }} ${{ matrix.architecture }}
-        path: BawtBuild/Windows/${{ matrix.tcl-version }}/${{ matrix.architecture }}/Release/Distribution/
+        path: BawtBuild/${{ matrix.tcl-version }}/Windows/${{ matrix.architecture }}/Release/Distribution/opt/Tcl
 
   build-linux:
     if: github.event.inputs.platform == 'linux' || github.event.inputs.platform == 'all'
