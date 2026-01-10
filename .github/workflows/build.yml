@@ -33,8 +33,9 @@ on:
         type: choice
         required: true
         options:
+          - 'Tcl_Minimal'
           - 'Tcl_BI'
-        default: 'Tcl_BI'
+        default: 'Tcl_Minimal'
 
 jobs:
   build-windows:
