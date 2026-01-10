@@ -180,17 +180,18 @@ jobs:
 
     - name: Build Tcl/Tk Distribution
       run: |
-        Bawt-3.2.0/tclkit-Darwin64 Bawt-3.2.0/Bawt.tcl --rootdir BawtBuild/${{ matrix.tcl-version }}/${{ matrix.architecture }}/github.event.inputs.config }} --architecture ${{ matrix.architecture }} --complete --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
+        echo GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT
+        Bawt-3.2.0/tclkit-Darwin64 Bawt-3.2.0/Bawt.tcl --rootdir $GH_BAWT_BUILDROOT --architecture ${{ matrix.architecture }} --complete --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
 
     - name: Upload build logs
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: build-logs-macos-{{ matrix.tcl-version }}-${{ matrix.architecture }}
+        name: build-logs-macos-${{ matrix.tcl-version }}-${{ github.event.inputs.config }}-${{ matrix.architecture }}
         path: ${{ env.GH_BAWT_BUILDDIR }}/Logs/
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
-        name: tcl-distribution-macos
-        path: BawtBuild/Darwin/x64/Release/Distribution/
+        name: tcl-distribution-linux-${{ matrix.tcl-version }}-${{ github.event.inputs.config }}-${{ matrix.architecture }}
+        path: ${{ env.GH_BAWT_BUILDDIR }}/Release/Distribution/opt/Tcl
