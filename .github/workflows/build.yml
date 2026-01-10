@@ -50,7 +50,9 @@ jobs:
     - name: Setup BAWT environment
       shell: pwsh
       run: |
-        $GH_BAWT_BUILDDIR="BawtBuild/${{ matrix.tcl-version }}/${{ github.event.inputs.config }}/Windows/${{ matrix.architecture }}"
+        $GH_BAWT_BUILDROOT="BawtBuild/${{ matrix.tcl-version }}/${{ github.event.inputs.config }}"
+        $GH_BAWT_BUILDDIR="$GH_BAWT_BUILDROOT/Windows/${{ matrix.architecture }}"
+        "GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT" >> $env:GITHUB_ENV
         "GH_BAWT_BUILDDIR=$GH_BAWT_BUILDDIR" >> $env:GITHUB_ENV
 
     - name: Checkout repository
@@ -74,19 +76,20 @@ jobs:
     - name: Build Tcl/Tk Distribution
       shell: cmd
       run: |
-        Bawt-3.2.0\tclkit-win32-intel.exe Bawt-3.2.0\Bawt.tcl --rootdir BawtBuild/${{ matrix.tcl-version }}/${{ github.event.inputs.config }} --architecture ${{ matrix.architecture }} --compiler gcc --numjobs 4 --complete --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
+        set GH_BAWT_BUILDROOT
+        Bawt-3.2.0\tclkit-win32-intel.exe Bawt-3.2.0\Bawt.tcl --rootdir "%GH_BAWT_BUILDROOT%" --architecture ${{ matrix.architecture }} --compiler gcc --numjobs 4 --complete --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
 
     - name: Upload build logs
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: build-logs-windows-${{ matrix.tcl-version }}-${{ matrix.architecture }}
+        name: build-logs-windows-${{ matrix.tcl-version }}-${{ github.event.inputs.config  }}-${{ matrix.architecture }}
         path: ${{ env.GH_BAWT_BUILDDIR }}/Logs/
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
-        name: tcl-distribution-windows-${{ matrix.tcl-version }}-${{ matrix.architecture }}
+        name: tcl-distribution-windows-${{ matrix.tcl-version }}-${{ github.event.inputs.config  }}-${{ matrix.architecture }}
         path: ${{ env.GH_BAWT_BUILDDIR }}/Release/Distribution/opt/Tcl
 
   build-linux:
