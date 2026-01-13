@@ -1,8 +1,10 @@
 # IMPORTANT
 
-I'm NOT a *nix dev. All I wanted is to fork apnadkarni's great work to make Tk see system fonts. In progress...
+I'm NOT a *nix dev. All I wanted is to fork apnadkarni's great work to make Tk see system fonts.
 
 [Here's the original repo](https://github.com/apnadkarni/tcl-builds)
+
+[Here are my releases and instructions](https://github.com/serpinio/tcl-builds-with-libxft/releases)
 
 # Only Linux Builds
 
