@@ -1,52 +1,80 @@
-# tcl-builds
+# IMPORTANT
 
-Experimental workflows for generating Tcl batteries-included distributions
-using [BAWT](https://www.tcl3d.org/bawt/). Still very much a prototype. None
-of the builds currently undergo testing. Nor are they verified or signed.
-Please raise a ticket for issues and suggestions.
+Forked apnadkarni's great work to make Tk see system fonts. **Only 64-bit Tcl 9 builds for Linux here**, since for Windows the amazing [Magicsplat's Tcl/Tk 9 installer](https://www.magicsplat.com/tcl-installer/) is available, and I highly recommend it. As for Mac, you can try MacPorts, maybe they have Tcl/Tk 9 available.
 
-**Currently only 64-bit Tcl 9 builds are available. 32-bit or Tcl 8.6 builds TBD.**
+- [Here's the original repo](https://github.com/apnadkarni/tcl-builds)
+- [Here are my releases](https://github.com/serpinio/tcl-builds-with-libxft/releases)
 
-The generated distributions can be downloaded from the 
-[Releases](https://github.com/apnadkarni/tcl-builds/releases) page.
+Experimental batteries-included build of Tcl 9.0.3 for Linux compiled with Xft Support. Created out of curiosity more than anything else, because I wanted a batteries included Tcl/Tk 9 package to play with on Linux. It works!
 
-There is no installer. Distributions are ZIP archives. Extract and run.
+Successfully tested in Linux Mint 22.2 MATE:
+- Tk with smooth font rendering
 
-Distributions include "stock" tclsh and wish, single file executables based
-on both Tclkit and zipkits and a large number of packages, with some
-differences between platforms.
+<img width="422" height="436" alt="image" src="https://github.com/user-attachments/assets/846bbeba-36ea-4940-a60d-956a3b12dde8" />
 
-## Windows
+- tls socket/https connections* _(*see instructions below)_
+- http library and localhost in/out connections
+- sqlite (basic tests)
 
-Windows distributions are built with MinGW gcc 14.2 and have been tested
-on Windows 10.
+## "Installation"
 
-## Linux
+1. Extract it to a folder in your home directory, e.g., `~/tcl9`
+2. Add the binaries and libraries to your shell path. Open your `.bashrc`: `nano ~/.bashrc` and Add this at the end:
 
-Built on Ubuntu-22.04 x64 and tested on my WSL system, once LD_LIBRARY_PATH
-is configured to point to the extracted lib directory. Probably will not
-work on older Ubuntu due to GLIBC requirements. No idea about other Linux
-distributions.
+```
+# Tcl 9 Environment
+export TCL_ROOT=$HOME/tcl9
+export PATH="$TCL_ROOT/bin:$PATH"
+export LD_LIBRARY_PATH="$TCL_ROOT/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+# Aliases for convenience
+alias tclsh='tclsh9.0'
+alias wish='wish9.0'
+```
 
-## MacOS
+4. Run: `source ~/.bashrc`
+5. Check by running `tclsh` or `wish` in the Terminal. Type `info patchlevel` — it should return "9.0.3"
 
-MacOS builds use the `macos-latest` runner which is macOS 15 on ARM64. I
-don't have a Mac so completely untested. No idea if the paths are
-appropriate, whether it will work on older macOS versions etc.
-Relationship with Marc Culler's signed builds needs to be
-investigated to choose one or integrate in some form.
+## Configure Linux linker
 
-## Doing your own builds
+To make `LD_LIBRARY_PATH` discoverable when running .tcl scripts not from an already open terminal, but also via a file manager (which usually doesn't read `.bashrc` upon spawning the terminal for `-x` executable files), we need to let the Linux linker (ld) know about the new `tcl9` folder globally:
 
-To do your own builds, clone the repository. On the Actions page, click the
-`Tcl/Tk Distribution` link on the left and then click the `Run workflow` button.
-A pop-up shows the build options to select platform, Tcl version etc. The
-built distributions will be downloadable from the Artifacts section of
-the workflow run status page.
+1. Create a new config file: `sudo nano /etc/ld.so.conf.d/tcl9.conf`
+2. Paste the path to your lib folder (replace "username" with yours): `/home/username/tcl9/lib`
+3. Save and run: `sudo ldconfig`
 
-## Credits
+From this moment on, you should be able to run tcl scripts via anything that spawns a clean terminal which doesn't set up environment vars specified in `.bashrc`. If you **don't** do this, you'll be getting this error:
 
-All credit goes to Paul Obermeier for his [BAWT](https://www.tcl3d.org/bawt/)
-framework which does 100% of the heavy lifting needed for building
-distributions.
+`/home/username/tcl9/bin/wish9.0: error while loading shared libraries: libtcl9tk9.0.so: cannot open shared object file: No such file or directory `
 
+## How to fix "socket errors" with HTTPS connections
+
+Again, since this is a portable distribution, the `tls` package also needs to be told where your Linux OS stores its Root Certificates (Trust Store). Place this snippet at the top of any script making `https` requests:
+
+```
+# --- Dependencies ---
+package require http
+package require tls
+
+# List of common CA bundle locations on different Linux distros
+set ca_bundles {
+    "/etc/ssl/certs/ca-certificates.crt" 
+    "/etc/pki/tls/certs/ca-bundle.crt"
+    "/etc/ssl/ca-bundle.pem"
+}
+
+set found_ca 0
+foreach path $ca_bundles {
+    if {[file exists $path]} {
+        http::register https 443 [list ::tls::socket -autoservername 1 -cafile $path]
+        set found_ca 1
+        break
+    }
+}
+
+# Fallback: if no system bundle is found, try registering without explicit path
+if {!$found_ca} {
+    http::register https 443 [list ::tls::socket -autoservername 1]
+}
+```
+
+Copyright and everything belong to the author of the original repo and Tcl/Tk/library developers.
