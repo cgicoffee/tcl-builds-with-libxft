@@ -1,4 +1,4 @@
-name: Tcl/Tk Distribution
+name: Tcl/Tk Linux-Only Distribution
 
 on:
   workflow_dispatch:
@@ -7,93 +7,23 @@ on:
         required: true
         type: choice
         options:
-          - '["8.6.17"]'
           - '["9.0.3"]'
-          - '["8.6.17","9.0.3"]'
         default: '["9.0.3"]'
-      platform:
-        required: true
-        type: choice
-        options:
-          - 'windows'
-          - 'linux'
-          - 'macos'
-          - 'all'
       architectures:
-        description: 'Target architectures'
         required: true
         type: choice
         options:
           - '["x64"]'
-          - '["x86"]'
-          - '["x86", "x64"]'
-        default: '["x86", "x64"]'
+        default: '["x64"]'
       config:
-        description: 'BAWT Setup file to use'
         type: choice
         required: true
         options:
-          - 'Tcl_Minimal'
           - 'Tcl_BI'
-        default: 'Tcl_Minimal'
+        default: 'Tcl_BI'
 
 jobs:
-  build-windows:
-    if: github.event.inputs.platform == 'windows' || github.event.inputs.platform == 'all'
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        architecture: ${{ fromJSON(github.event.inputs.architectures) }}
-        tcl-version: ${{ fromJSON(github.event.inputs.tcl-versions) }}
-
-    steps:
-    - name: Setup BAWT environment
-      shell: pwsh
-      run: |
-        $GH_BAWT_BUILDROOT="BawtBuild/${{ matrix.tcl-version }}/${{ github.event.inputs.config }}"
-        $GH_BAWT_BUILDDIR="$GH_BAWT_BUILDROOT/Windows/${{ matrix.architecture }}"
-        "GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT" >> $env:GITHUB_ENV
-        "GH_BAWT_BUILDDIR=$GH_BAWT_BUILDDIR" >> $env:GITHUB_ENV
-
-    - name: Checkout repository
-      uses: actions/checkout@v5
-
-    - name: Download BAWT framework
-      shell: pwsh
-      run: |
-        Invoke-WebRequest -Uri "https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip" -OutFile "Bawt-3.2.0.zip"
-        Expand-Archive -Path "Bawt-3.2.0.zip" -DestinationPath "." -Force
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-    - name: Download MSYS/MinGW
-      shell: pwsh
-      run: |
-        Set-Location "Bawt-3.2.0/Bootstrap-Windows"
-        Invoke-WebRequest -Uri "https://www.bawt.tcl3d.org/download/Bootstrap-Windows/gcc14.2.0_x86_64-w64-mingw32.7z" -OutFile "gcc14.2.0_x86_64-w64-mingw32.7z"
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        Set-Location "../.."
-
-    - name: Build Tcl/Tk Distribution
-      shell: cmd
-      run: |
-        set GH_BAWT_BUILDROOT
-        Bawt-3.2.0\tclkit-win32-intel.exe Bawt-3.2.0\Bawt.tcl --rootdir "%GH_BAWT_BUILDROOT%" --architecture ${{ matrix.architecture }} --compiler gcc --numjobs 4 --complete --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
-
-    - name: Upload build logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-logs-windows-${{ matrix.tcl-version }}-${{ github.event.inputs.config  }}-${{ matrix.architecture }}
-        path: ${{ env.GH_BAWT_BUILDDIR }}/Logs/
-
-    - name: Upload distribution
-      uses: actions/upload-artifact@v4
-      with:
-        name: tcl-distribution-windows-${{ matrix.tcl-version }}-${{ github.event.inputs.config  }}-${{ matrix.architecture }}
-        path: ${{ env.GH_BAWT_BUILDDIR }}/Release/Distribution/opt/Tcl
-
   build-linux:
-    if: github.event.inputs.platform == 'linux' || github.event.inputs.platform == 'all'
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -113,7 +43,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential curl p7zip-full zip \
           libx11-dev libcups2-dev libcairo2-dev libglx-dev \
-          libglu1-mesa-dev libasound2-dev ibxft-dev libfontconfig1-dev libxrender-dev
+          libglu1-mesa-dev libasound2-dev libxft-dev libfontconfig1-dev libxrender-dev
 
     - name: Checkout repository
       uses: actions/checkout@v5
@@ -134,67 +64,8 @@ jobs:
         echo GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT
         Bawt-3.2.0/tclkit-Linux64-intel Bawt-3.2.0/Bawt.tcl --rootdir $GH_BAWT_BUILDROOT --architecture ${{ matrix.architecture }} --compiler gcc --numjobs 4 --complete --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
 
-    - name: Upload build logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-logs-linux-${{ matrix.tcl-version }}-${{ github.event.inputs.config }}-${{ matrix.architecture }}
-        path: ${{ env.GH_BAWT_BUILDDIR }}/Logs/
-
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
         name: tcl-distribution-linux-${{ matrix.tcl-version }}-${{ github.event.inputs.config }}-${{ matrix.architecture }}
-        path: ${{ env.GH_BAWT_BUILDDIR }}/Release/Distribution/opt/Tcl
-
-  build-macos:
-    if: github.event.inputs.platform == 'macos' || github.event.inputs.platform == 'all'
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        architecture: ${{ fromJSON(github.event.inputs.architectures) }}
-        tcl-version: ${{ fromJSON(github.event.inputs.tcl-versions) }}
-
-    steps:
-    - name: Install XCode Command Line Tools
-      run: |
-        xcode-select --install 2>/dev/null || true
-
-    - name: Setup BAWT environment
-      run: |
-       GH_BAWT_BUILDROOT="BawtBuild/${{ matrix.tcl-version }}/${{ github.event.inputs.config }}"
-       GH_BAWT_BUILDDIR="$GH_BAWT_BUILDROOT/Darwin/${{ matrix.architecture }}"
-       echo "GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT" >> $GITHUB_ENV
-       echo "GH_BAWT_BUILDDIR=$GH_BAWT_BUILDDIR" >> $GITHUB_ENV
-
-    - name: Checkout repository
-      uses: actions/checkout@v5
-
-    - name: Download BAWT framework
-      run: |
-        curl -L -o Bawt-3.2.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip
-        unzip Bawt-3.2.0.zip
-
-    - name: Set permissions
-      run: |
-        cd Bawt-3.2.0
-        chmod u+x Build*.sh
-        chmod u+x tclkit*
-
-    - name: Build Tcl/Tk Distribution
-      run: |
-        echo GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT
-        Bawt-3.2.0/tclkit-Darwin64 Bawt-3.2.0/Bawt.tcl --rootdir $GH_BAWT_BUILDROOT --architecture ${{ matrix.architecture }} --complete --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
-
-    - name: Upload build logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-logs-macos-${{ matrix.tcl-version }}-${{ github.event.inputs.config }}-${{ matrix.architecture }}
-        path: ${{ env.GH_BAWT_BUILDDIR }}/Logs/
-
-    - name: Upload distribution
-      uses: actions/upload-artifact@v4
-      with:
-        name: tcl-distribution-macos-${{ matrix.tcl-version }}-${{ github.event.inputs.config }}-${{ matrix.architecture }}
         path: ${{ env.GH_BAWT_BUILDDIR }}/Release/Distribution/opt/Tcl
