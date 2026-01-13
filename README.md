@@ -1,3 +1,7 @@
+# IMPORTANT
+
+I'm NOT a *nix dev. All I wanted is to fork apnadkarni's great work to make Tk see system fonts. In progress...
+
 # tcl-builds
 
 Experimental workflows for generating Tcl batteries-included distributions
