@@ -34,9 +34,21 @@ alias wish='wish9.0'
 4. Run: `source ~/.bashrc`
 5. Check by running `tclsh` or `wish` in the Terminal. Type `info patchlevel` — it should return "9.0.3"
 
+## Configure Linux linker
+
+To make `LD_LIBRARY_PATH` discoverable when running .tcl scripts not from an already open terminal, but also via a file manager (which usually doesn't read `.bashrc` upon spawning the terminal for `-x` executable files), we need to let the Linux linker (ld) know about the new `tcl9` folder globally:
+
+1. Create a new config file: `sudo nano /etc/ld.so.conf.d/tcl9.conf`
+2. Paste the path to your lib folder: `/home/mint/tcl9/lib`
+3. Save and run: `sudo ldconfig`
+
+From this moment on, you should be able to run tcl scripts via anything that spawns a clean terminal which doesn't set up environment vars specified in `.bashrc`. If you **don't** do this, you'll be getting this error:
+
+`/home/username/tcl9/bin/wish9.0: error while loading shared libraries: libtcl9tk9.0.so: cannot open shared object file: No such file or directory `
+
 ## How to fix "socket errors" with HTTPS connections
 
-Because this is a portable distribution, the `tls` package needs to be told where your Linux OS stores its Root Certificates (Trust Store). Place this snippet at the top of any script making `https` requests:
+Again, since this is a portable distribution, the `tls` package also needs to be told where your Linux OS stores its Root Certificates (Trust Store). Place this snippet at the top of any script making `https` requests:
 
 ```
 # --- Dependencies ---
