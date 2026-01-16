@@ -39,7 +39,7 @@ alias wish='wish9.0'
 To make `LD_LIBRARY_PATH` discoverable when running .tcl scripts not from an already open terminal, but also via a file manager (which usually doesn't read `.bashrc` upon spawning the terminal for `-x` executable files), we need to let the Linux linker (ld) know about the new `tcl9` folder globally:
 
 1. Create a new config file: `sudo nano /etc/ld.so.conf.d/tcl9.conf`
-2. Paste the path to your lib folder: `/home/mint/tcl9/lib`
+2. Paste the path to your lib folder (replace "username" with yours): `/home/username/tcl9/lib`
 3. Save and run: `sudo ldconfig`
 
 From this moment on, you should be able to run tcl scripts via anything that spawns a clean terminal which doesn't set up environment vars specified in `.bashrc`. If you **don't** do this, you'll be getting this error:
