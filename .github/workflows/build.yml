@@ -59,6 +59,12 @@ jobs:
         chmod u+x Build*.sh
         chmod u+x tclkit*
 
+    - name: Patch BAWT legacy boot scripts
+      run: |
+        # Using the patch file from the repository to overwrite BAWT templates
+        find Bawt-3.2.0 -name "boot.tcl" -exec cp patches/boot-tcl9.tcl {} \;
+        echo "Successfully updated BAWT templates using patches/boot-tcl9.tcl"
+
     - name: Build Tcl/Tk Distribution
       run: |
         echo GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT
@@ -68,4 +74,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: tcl-distribution-linux-${{ matrix.tcl-version }}-${{ github.event.inputs.config }}-${{ matrix.architecture }}
-        path: ${{ env.GH_BAWT_BUILDDIR }}/Release/Distribution/opt/Tcl
+        path: ${{ env.GH_BAWT_BUILDDIR }}/Release/Distribution/opt/Tcl_
