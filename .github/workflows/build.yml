@@ -26,11 +26,13 @@ on:
 
 jobs:
   build-linux:
-    # Use native ARM64 runners for arm64 architecture to avoid QEMU slowness.
-    # ubuntu-24.04-arm64 is the standard GitHub native ARM runner.
+    # Use native ARM runner for ARM64, otherwise stay on original Ubuntu 22.04
     runs-on: ${{ matrix.architecture == 'arm64' && 'ubuntu-24.04-arm64' || 'ubuntu-22.04' }}
+    
+    # Only use a container for ARM64 (Debian 11). x64 remains on the Host (Ubuntu).
+    container: ${{ matrix.architecture == 'arm64' && 'debian:11' || null }}
+
     strategy:
-      fail-fast: false
       matrix:
         architecture: ${{ fromJSON(github.event.inputs.architectures) }}
         tcl-version: ${{ fromJSON(github.event.inputs.tcl-versions) }}
@@ -45,8 +47,10 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential curl p7zip-full zip \
+        # Check if sudo exists (Host) or not (Container) to prevent command failures
+        [[ -f /usr/bin/sudo ]] && USE_SUDO="sudo" || USE_SUDO=""
+        $USE_SUDO apt-get update
+        $USE_SUDO apt-get install -y build-essential curl p7zip-full zip \
           libx11-dev libcups2-dev libcairo2-dev libglx-dev \
           libglu1-mesa-dev libasound2-dev libxft-dev libfontconfig1-dev libxrender-dev
 
@@ -66,27 +70,15 @@ jobs:
 
     - name: Build Tcl/Tk Distribution
       run: |
-        # Map the bootstrap kit based on the current runner architecture.
-        # If we are on ARM64 hardware, we MUST use the Linux64-arm kit to run the Bawt.tcl script.
+        # Use the correct internal kit for the runner architecture
         if [ "${{ matrix.architecture }}" = "arm64" ]; then
-          BOOTSTRAP_KIT="Bawt-3.2.0/tclkit-Linux64-arm"
+          KIT="Bawt-3.2.0/tclkit-Linux64-arm"
         else
-          BOOTSTRAP_KIT="Bawt-3.2.0/tclkit-Linux64-intel"
+          KIT="Bawt-3.2.0/tclkit-Linux64-intel"
         fi
-
-        echo "Using Bootstrap Kit: $BOOTSTRAP_KIT"
-        echo "GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT"
-
-        # Execute BAWT using the architecture-specific tclkit identified above.
-        $BOOTSTRAP_KIT Bawt-3.2.0/Bawt.tcl \
-          --rootdir $GH_BAWT_BUILDROOT \
-          --architecture ${{ matrix.architecture }} \
-          --compiler gcc \
-          --numjobs 4 \
-          --complete \
-          --tclversion ${{ matrix.tcl-version }} \
-          --exclude ffmpeg \
-          ${{ github.event.inputs.config }}.bawt all
+        
+        echo "Using kit: $KIT"
+        $KIT Bawt-3.2.0/Bawt.tcl --rootdir $GH_BAWT_BUILDROOT --architecture ${{ matrix.architecture }} --compiler gcc --numjobs 4 --complete --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
