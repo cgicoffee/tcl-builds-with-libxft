@@ -14,6 +14,8 @@ on:
         type: choice
         options:
           - '["x64"]'
+          - '["arm64"]'
+          - '["x64", "arm64"]'
         default: '["x64"]'
       config:
         type: choice
@@ -24,8 +26,11 @@ on:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-22.04
+    # Use native ARM64 runners for arm64 architecture to avoid QEMU slowness.
+    # ubuntu-24.04-arm64 is the standard GitHub native ARM runner.
+    runs-on: ${{ matrix.architecture == 'arm64' && 'ubuntu-24.04-arm64' || 'ubuntu-22.04' }}
     strategy:
+      fail-fast: false
       matrix:
         architecture: ${{ fromJSON(github.event.inputs.architectures) }}
         tcl-version: ${{ fromJSON(github.event.inputs.tcl-versions) }}
@@ -61,11 +66,30 @@ jobs:
 
     - name: Build Tcl/Tk Distribution
       run: |
-        echo GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT
-        Bawt-3.2.0/tclkit-Linux64-intel Bawt-3.2.0/Bawt.tcl --rootdir $GH_BAWT_BUILDROOT --architecture ${{ matrix.architecture }} --compiler gcc --numjobs 4 --complete --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
+        # Map the bootstrap kit based on the current runner architecture.
+        # If we are on ARM64 hardware, we MUST use the Linux64-arm kit to run the Bawt.tcl script.
+        if [ "${{ matrix.architecture }}" = "arm64" ]; then
+          BOOTSTRAP_KIT="Bawt-3.2.0/tclkit-Linux64-arm"
+        else
+          BOOTSTRAP_KIT="Bawt-3.2.0/tclkit-Linux64-intel"
+        fi
+
+        echo "Using Bootstrap Kit: $BOOTSTRAP_KIT"
+        echo "GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT"
+
+        # Execute BAWT using the architecture-specific tclkit identified above.
+        $BOOTSTRAP_KIT Bawt-3.2.0/Bawt.tcl \
+          --rootdir $GH_BAWT_BUILDROOT \
+          --architecture ${{ matrix.architecture }} \
+          --compiler gcc \
+          --numjobs 4 \
+          --complete \
+          --tclversion ${{ matrix.tcl-version }} \
+          --exclude ffmpeg \
+          ${{ github.event.inputs.config }}.bawt all
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
         name: tcl-distribution-linux-${{ matrix.tcl-version }}-${{ github.event.inputs.config }}-${{ matrix.architecture }}
-        path: ${{ env.GH_BAWT_BUILDDIR }}/Release/Distribution/opt/Tcl
+        path: ${{ env.GH_BAWT_BUILDDIR }}/Release/Distribution/opt/Tcl_
