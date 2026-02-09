@@ -45,7 +45,6 @@ jobs:
 
     - name: Setup BAWT environment
       run: |
-       # Use a local path for the build root
        echo "GH_BAWT_BUILDROOT=BawtBuild" >> $GITHUB_ENV
        mkdir -p BawtBuild
 
@@ -62,7 +61,6 @@ jobs:
         unzip -o Bawt-3.2.0.zip
         chmod u+x Bawt-3.2.0/tclkit-Linux64-intel
         
-        # Call Bawt.tcl directly via tclkit to avoid Build-Linux.sh surprises
         ./Bawt-3.2.0/tclkit-Linux64-intel Bawt-3.2.0/Bawt.tcl \
           --rootdir "$(pwd)/BawtBuild" \
           --architecture x64 \
@@ -89,21 +87,20 @@ jobs:
             unzip -o Bawt-3.2.0.zip
             chmod u+x Bawt-3.2.0/tclkit-Linux64-arm
             
-            # Call Bawt.tcl directly via tclkit to avoid Build-Linux.sh bugs
+            # Use --architecture x64 because BAWT doesn't recognize 'arm64'. 
+            # The underlying ARM compiler will still produce ARM binaries.
             ./Bawt-3.2.0/tclkit-Linux64-arm Bawt-3.2.0/Bawt.tcl \
               --rootdir \"$(pwd)/BawtBuild\" \
-              --architecture arm64 \
+              --architecture x64 \
               --compiler gcc \
               --tclversion ${{ matrix.tcl-version }} \
               --numjobs 4 --complete --nosubdirs --exclude ffmpeg \
               Bawt-3.2.0/Setup/${{ github.event.inputs.config }}.bawt all
           "
-        # Restore permissions for the runner user
         sudo chown -R $USER:$USER BawtBuild
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
         name: tcl-distribution-linux-${{ matrix.tcl-version }}-${{ github.event.inputs.config }}-${{ matrix.architecture }}
-        # With --nosubdirs, files land in BawtBuild/Distribution
         path: BawtBuild/Distribution/opt/Tcl
