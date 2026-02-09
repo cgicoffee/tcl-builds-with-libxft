@@ -26,11 +26,7 @@ on:
 
 jobs:
   build-linux:
-    # Use x64 runner to avoid the ARM64 native runner queue, so I'll emulate with QEMU
     runs-on: ubuntu-22.04
-    
-    # Leave this null so the job starts on the Host
-    # ARM64 will jump into a container via a step
     container: null
 
     strategy:
@@ -49,10 +45,9 @@ jobs:
 
     - name: Setup BAWT environment
       run: |
-       GH_BAWT_BUILDROOT="BawtBuild/${{ matrix.tcl-version }}/${{ github.event.inputs.config }}"
-       GH_BAWT_BUILDDIR="$GH_BAWT_BUILDROOT/Linux/${{ matrix.architecture }}"
+       GH_BAWT_BUILDROOT="${{ github.workspace }}/BawtBuild"
        echo "GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT" >> $GITHUB_ENV
-       echo "GH_BAWT_BUILDDIR=$GH_BAWT_BUILDDIR" >> $GITHUB_ENV
+       mkdir -p "$GH_BAWT_BUILDROOT"
 
     # --- NATIVE X64 PATH
     - name: Install dependencies (x64)
@@ -67,22 +62,23 @@ jobs:
       if: matrix.architecture == 'x64'
       run: |
         curl -L -o Bawt-3.2.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip
-        unzip Bawt-3.2.0.zip
-        cd Bawt-3.2.0 && chmod u+x Build*.sh tclkit* && cd ..
-        Bawt-3.2.0/tclkit-Linux64-intel Bawt-3.2.0/Bawt.tcl --rootdir $GH_BAWT_BUILDROOT --architecture x64 --compiler gcc --numjobs 4 --complete --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
+        unzip -o Bawt-3.2.0.zip
+        chmod u+x Bawt-3.2.0/Build*.sh Bawt-3.2.0/tclkit*
+        # Use the wrapper but put options BEFORE the setup file
+        cd Bawt-3.2.0
+        ./Build-Linux.sh x64 64 gcc \
+          --rootdir "${{ env.GH_BAWT_BUILDROOT }}" \
+          --tclversion ${{ matrix.tcl-version }} \
+          --numjobs 4 --complete --nosubdirs --exclude ffmpeg \
+          Setup/${{ github.event.inputs.config }}.bawt all
 
     # --- EMULATED ARM64 PATH ---
     - name: Build Tcl/Tk (arm64 via QEMU)
       if: matrix.architecture == 'arm64'
       run: |
-        # Force an absolute path on the host for the build root
-        # This ensures Docker writes to the mounted workspace and not its own internal disk
-        HOST_BUILDROOT="$(pwd)/${{ env.GH_BAWT_BUILDROOT }}"
-        
         docker run --rm --platform linux/arm64 \
           -v ${{ github.workspace }}:${{ github.workspace }} \
           -w ${{ github.workspace }} \
-          -e HOST_BUILDROOT="$HOST_BUILDROOT" \
           debian:11 bash -c "
             set -e
             apt-get update
@@ -95,17 +91,19 @@ jobs:
             chmod u+x Bawt-3.2.0/Build*.sh Bawt-3.2.0/tclkit*
             
             cd Bawt-3.2.0
-            
-            # Using the absolute host path for rootdir to guarantee persistence
-            ./Build-Linux.sh arm 64 gcc Setup/${{ github.event.inputs.config }}.bawt \
-              --rootdir \"\$HOST_BUILDROOT\" --numjobs 4 --complete \
-              --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg all
-            
+            # Order matters: Options first, then Setup file, then 'all'
+            ./Build-Linux.sh arm 64 gcc \
+              --rootdir \"${{ env.GH_BAWT_BUILDROOT }}\" \
+              --tclversion ${{ matrix.tcl-version }} \
+              --numjobs 4 --complete --nosubdirs --exclude ffmpeg \
+              Setup/${{ github.event.inputs.config }}.bawt all
           "
+        # Fix permissions so the runner can upload
+        sudo chown -R $USER:$USER "${{ env.GH_BAWT_BUILDROOT }}"
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
         name: tcl-distribution-linux-${{ matrix.tcl-version }}-${{ github.event.inputs.config }}-${{ matrix.architecture }}
-        # Wildcard search that ignores BAWT's architecture naming stuff
-        path: "**/Distribution/opt/Tcl"
+        # With --nosubdirs, the path is now predictable:
+        path: BawtBuild/Distribution/opt/Tcl
