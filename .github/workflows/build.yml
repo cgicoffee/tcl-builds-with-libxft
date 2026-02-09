@@ -14,8 +14,6 @@ on:
         type: choice
         options:
           - '["x64"]'
-          - '["arm64"]'
-          - '["x64", "arm64"]'
         default: '["x64"]'
       config:
         type: choice
@@ -27,81 +25,47 @@ on:
 jobs:
   build-linux:
     runs-on: ubuntu-22.04
-    container: null
-
     strategy:
-      fail-fast: false
       matrix:
         architecture: ${{ fromJSON(github.event.inputs.architectures) }}
         tcl-version: ${{ fromJSON(github.event.inputs.tcl-versions) }}
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v5
-
-    - name: Set up QEMU
-      if: matrix.architecture == 'arm64'
-      uses: docker/setup-qemu-action@v3
-
     - name: Setup BAWT environment
       run: |
-       # Establish absolute paths for the whole job
-       echo "BAWT_HOME=${{ github.workspace }}/Bawt-3.2.0" >> $GITHUB_ENV
-       echo "BAWT_ROOT=${{ github.workspace }}/BawtBuild" >> $GITHUB_ENV
-       mkdir -p "${{ github.workspace }}/BawtBuild"
+       GH_BAWT_BUILDROOT="BawtBuild/${{ matrix.tcl-version }}/${{ github.event.inputs.config }}"
+       GH_BAWT_BUILDDIR="$GH_BAWT_BUILDROOT/Linux/${{ matrix.architecture }}"
+       echo "GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT" >> $GITHUB_ENV
+       echo "GH_BAWT_BUILDDIR=$GH_BAWT_BUILDDIR" >> $GITHUB_ENV
 
-    # --- NATIVE X64 PATH ---
-    - name: Build Tcl/Tk (x64)
-      if: matrix.architecture == 'x64'
+    - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential curl p7zip-full zip \
           libx11-dev libcups2-dev libcairo2-dev libglx-dev \
           libglu1-mesa-dev libasound2-dev libxft-dev libfontconfig1-dev libxrender-dev
-        
-        curl -L -o Bawt-3.2.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip
-        unzip -o Bawt-3.2.0.zip
-        chmod u+x ${{ env.BAWT_HOME }}/tclkit-Linux64-intel
-        
-        ${{ env.BAWT_HOME }}/tclkit-Linux64-intel ${{ env.BAWT_HOME }}/Bawt.tcl \
-          --rootdir "${{ env.BAWT_ROOT }}" \
-          --architecture x64 \
-          --compiler gcc \
-          --tclversion ${{ matrix.tcl-version }} \
-          --numjobs 4 --complete --nosubdirs --exclude ffmpeg \
-          "${{ env.BAWT_HOME }}/Setup/${{ github.event.inputs.config }}.bawt" all
 
-    # --- EMULATED ARM64 PATH ---
-    - name: Build Tcl/Tk (arm64 via QEMU)
-      if: matrix.architecture == 'arm64'
+    - name: Checkout repository
+      uses: actions/checkout@v5
+
+    - name: Download BAWT framework
       run: |
-        docker run --rm --platform linux/arm64 \
-          -v ${{ github.workspace }}:${{ github.workspace }} \
-          -w ${{ github.workspace }} \
-          debian:11 bash -c "
-            set -e
-            apt-get update
-            apt-get install -y build-essential curl p7zip-full zip \
-              libx11-dev libcups2-dev libcairo2-dev libglx-dev \
-              libglu1-mesa-dev libasound2-dev libxft-dev libfontconfig1-dev libxrender-dev
-            
-            curl -L -o Bawt-3.2.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip
-            unzip -o Bawt-3.2.0.zip
-            chmod u+x ${{ env.BAWT_HOME }}/tclkit-Linux64-arm
-            
-            # Use Absolute paths for BOTH the Tclkit, the script, and the setup file
-            ${{ env.BAWT_HOME }}/tclkit-Linux64-arm ${{ env.BAWT_HOME }}/Bawt.tcl \
-              --rootdir \"${{ env.BAWT_ROOT }}\" \
-              --architecture x64 \
-              --compiler gcc \
-              --tclversion ${{ matrix.tcl-version }} \
-              --numjobs 4 --complete --nosubdirs --exclude ffmpeg \
-              \"${{ env.BAWT_HOME }}/Setup/${{ github.event.inputs.config }}.bawt\" all
-          "
-        sudo chown -R $USER:$USER "${{ env.BAWT_ROOT }}"
+        curl -L -o Bawt-3.2.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip
+        unzip Bawt-3.2.0.zip
+
+    - name: Set permissions
+      run: |
+        cd Bawt-3.2.0
+        chmod u+x Build*.sh
+        chmod u+x tclkit*
+
+    - name: Build Tcl/Tk Distribution
+      run: |
+        echo GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT
+        Bawt-3.2.0/tclkit-Linux64-intel Bawt-3.2.0/Bawt.tcl --rootdir $GH_BAWT_BUILDROOT --architecture ${{ matrix.architecture }} --compiler gcc --numjobs 4 --complete --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
         name: tcl-distribution-linux-${{ matrix.tcl-version }}-${{ github.event.inputs.config }}-${{ matrix.architecture }}
-        path: BawtBuild/Distribution/opt/Tcl
+        path: ${{ env.GH_BAWT_BUILDDIR }}/Release/Distribution/opt/Tcl
