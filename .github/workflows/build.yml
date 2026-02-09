@@ -91,8 +91,9 @@ jobs:
             unzip -o Bawt-3.2.0.zip
             chmod u+x Bawt-3.2.0/Build*.sh Bawt-3.2.0/tclkit*
             
+            # Use aarch64 for BAWT compatibility
             ./Bawt-3.2.0/tclkit-Linux64-arm Bawt-3.2.0/Bawt.tcl \
-              --rootdir \$GH_BAWT_BUILDROOT --architecture arm64 --compiler gcc \
+              --rootdir \$GH_BAWT_BUILDROOT --architecture aarch64 --compiler gcc \
               --numjobs 4 --complete --tclversion ${{ matrix.tcl-version }} \
               --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
           "
