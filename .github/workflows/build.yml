@@ -91,11 +91,14 @@ jobs:
             unzip -o Bawt-3.2.0.zip
             chmod u+x Bawt-3.2.0/Build*.sh Bawt-3.2.0/tclkit*
             
-            # Use aarch64 for BAWT compatibility
-            ./Bawt-3.2.0/tclkit-Linux64-arm Bawt-3.2.0/Bawt.tcl \
-              --rootdir \$GH_BAWT_BUILDROOT --architecture aarch64 --compiler gcc \
-              --numjobs 4 --complete --tclversion ${{ matrix.tcl-version }} \
-              --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
+            # Navigate into BAWT folder to use the wrapper script as per documentation
+            cd Bawt-3.2.0
+            
+            # The Build-Linux.sh wrapper correctly translates architecture to 'arm' and '64'
+            # We use ../ for the rootdir because we just entered the Bawt-3.2.0 subdirectory
+            ./Build-Linux.sh arm 64 gcc Setup/${{ github.event.inputs.config }}.bawt \
+              --rootdir ../\$GH_BAWT_BUILDROOT --numjobs 4 --complete \
+              --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg all
           "
 
     - name: Upload distribution
