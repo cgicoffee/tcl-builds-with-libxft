@@ -26,12 +26,12 @@ on:
 
 jobs:
   build-linux:
-    # Use x64 host to avoid the ARM64 native runner queue, so I'll emulate with QEMU
+    # Use x64 runner to avoid the ARM64 native runner queue, so I'll emulate with QEMU
     runs-on: ubuntu-22.04
     
-    # x64 runs on Host (null)
-    # ARM64 container is now handled in steps to allow QEMU registration first
-    container: ${{ matrix.architecture == 'x64' && null || '' }}
+    # Leave this null so the job starts on the Host
+    # ARM64 will jump into a container via a step
+    container: null
 
     strategy:
       fail-fast: false
@@ -43,7 +43,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v5
 
-    # Necessary for ARM64 emulation on x64 host
     - name: Set up QEMU
       if: matrix.architecture == 'arm64'
       uses: docker/setup-qemu-action@v3
@@ -55,46 +54,48 @@ jobs:
        echo "GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT" >> $GITHUB_ENV
        echo "GH_BAWT_BUILDDIR=$GH_BAWT_BUILDDIR" >> $GITHUB_ENV
 
-    - name: Install dependencies and Build
+    # --- NATIVE X64 PATH
+    - name: Install dependencies (x64)
+      if: matrix.architecture == 'x64'
       run: |
-        # This block determines if we run natively (x64) or via QEMU Docker (arm64)
-        if [ "${{ matrix.architecture }}" = "arm64" ]; then
-          # ARM64: Run inside Debian 11 container via QEMU
-          docker run --rm --platform linux/arm64 \
-            -v ${{ github.workspace }}:${{ github.workspace }} \
-            -w ${{ github.workspace }} \
-            -e GH_BAWT_BUILDROOT="${{ env.GH_BAWT_BUILDROOT }}" \
-            -e GH_BAWT_BUILDDIR="${{ env.GH_BAWT_BUILDDIR }}" \
-            debian:11 bash -c "
-              apt-get update && apt-get install -y build-essential curl p7zip-full zip \
+        sudo apt-get update
+        sudo apt-get install -y build-essential curl p7zip-full zip \
+          libx11-dev libcups2-dev libcairo2-dev libglx-dev \
+          libglu1-mesa-dev libasound2-dev libxft-dev libfontconfig1-dev libxrender-dev
+
+    - name: Download and Build (x64)
+      if: matrix.architecture == 'x64'
+      run: |
+        curl -L -o Bawt-3.2.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip
+        unzip Bawt-3.2.0.zip
+        cd Bawt-3.2.0 && chmod u+x Build*.sh tclkit* && cd ..
+        Bawt-3.2.0/tclkit-Linux64-intel Bawt-3.2.0/Bawt.tcl --rootdir $GH_BAWT_BUILDROOT --architecture x64 --compiler gcc --numjobs 4 --complete --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
+
+    # --- EMULATED ARM64 PATH ---
+    - name: Build Tcl/Tk (arm64 via QEMU)
+      if: matrix.architecture == 'arm64'
+      run: |
+        # Use set -e inside the container so it fails immediately on network errors
+        docker run --rm --platform linux/arm64 \
+          -v ${{ github.workspace }}:${{ github.workspace }} \
+          -w ${{ github.workspace }} \
+          -e GH_BAWT_BUILDROOT="${{ env.GH_BAWT_BUILDROOT }}" \
+          debian:11 bash -c "
+            set -e
+            apt-get update
+            apt-get install -y build-essential curl p7zip-full zip \
               libx11-dev libcups2-dev libcairo2-dev libglx-dev \
               libglu1-mesa-dev libasound2-dev libxft-dev libfontconfig1-dev libxrender-dev
-              
-              curl -L -o Bawt-3.2.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip
-              unzip -o Bawt-3.2.0.zip
-              chmod u+x Bawt-3.2.0/Build*.sh Bawt-3.2.0/tclkit*
-              
-              Bawt-3.2.0/tclkit-Linux64-arm Bawt-3.2.0/Bawt.tcl \
-                --rootdir \$GH_BAWT_BUILDROOT --architecture arm64 --compiler gcc \
-                --numjobs 4 --complete --tclversion ${{ matrix.tcl-version }} \
-                --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
-            "
-        else
-          # x64: Stay on the Host (Original Logic)
-          sudo apt-get update
-          sudo apt-get install -y build-essential curl p7zip-full zip \
-            libx11-dev libcups2-dev libcairo2-dev libglx-dev \
-            libglu1-mesa-dev libasound2-dev libxft-dev libfontconfig1-dev libxrender-dev
-          
-          curl -L -o Bawt-3.2.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip
-          unzip -o Bawt-3.2.0.zip
-          chmod u+x Bawt-3.2.0/Build*.sh Bawt-3.2.0/tclkit*
-          
-          Bawt-3.2.0/tclkit-Linux64-intel Bawt-3.2.0/Bawt.tcl \
-            --rootdir $GH_BAWT_BUILDROOT --architecture x64 --compiler gcc \
-            --numjobs 4 --complete --tclversion ${{ matrix.tcl-version }} \
-            --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
-        fi
+            
+            curl -L -o Bawt-3.2.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip
+            unzip -o Bawt-3.2.0.zip
+            chmod u+x Bawt-3.2.0/Build*.sh Bawt-3.2.0/tclkit*
+            
+            ./Bawt-3.2.0/tclkit-Linux64-arm Bawt-3.2.0/Bawt.tcl \
+              --rootdir \$GH_BAWT_BUILDROOT --architecture arm64 --compiler gcc \
+              --numjobs 4 --complete --tclversion ${{ matrix.tcl-version }} \
+              --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
+          "
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
