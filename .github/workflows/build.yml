@@ -101,8 +101,6 @@ jobs:
               --rootdir \"\$HOST_BUILDROOT\" --numjobs 4 --complete \
               --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg all
             
-            echo '--- DEBUG: LOCATING PRODUCED FILES ---'
-            find \"\$HOST_BUILDROOT\" -maxdepth 10 -name 'opt'
           "
 
     - name: Upload distribution
