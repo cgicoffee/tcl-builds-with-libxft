@@ -109,6 +109,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: tcl-distribution-linux-${{ matrix.tcl-version }}-${{ github.event.inputs.config }}-${{ matrix.architecture }}
-        # The wildcard will (???) find the distribution folder regardless of whether 
-        # BAWT used 'arm64', 'Arm64', or 'aarch64' as the architecture folder name.
-        path: ${{ env.GH_BAWT_BUILDROOT }}/**/Distribution/opt/Tcl
+        # Wildcard search that ignores BAWT's architecture naming stuff
+        path: "**/Distribution/opt/Tcl"
