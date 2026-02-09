@@ -51,6 +51,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential curl p7zip-full zip \
+          libssl-dev ca-certificates \
           libx11-dev libcups2-dev libcairo2-dev libglx-dev \
           libglu1-mesa-dev libasound2-dev libxft-dev libfontconfig1-dev libxrender-dev
 
@@ -114,6 +115,7 @@ jobs:
         sudo apt-get update
         # Keeping smooth font rendering libs: libxft-dev libfontconfig1-dev libxrender-dev
         sudo apt-get install -y build-essential curl p7zip-full zip \
+          libssl-dev ca-certificates \
           libx11-dev libcups2-dev libcairo2-dev libglx-dev \
           libglu1-mesa-dev libasound2-dev libxft-dev libfontconfig1-dev libxrender-dev
 
