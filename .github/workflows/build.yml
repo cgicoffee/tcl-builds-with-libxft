@@ -105,4 +105,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: tcl-distribution-linux-${{ matrix.tcl-version }}-${{ github.event.inputs.config }}-${{ matrix.architecture }}
-        path: ${{ env.GH_BAWT_BUILDDIR }}/Release/Distribution/opt/Tcl
+        path: ${{ env.GH_BAWT_BUILDROOT }}/**/Distribution/opt/Tcl
