@@ -45,8 +45,10 @@ jobs:
 
     - name: Setup BAWT environment
       run: |
-       echo "GH_BAWT_BUILDROOT=BawtBuild" >> $GITHUB_ENV
-       mkdir -p BawtBuild
+       # Establish absolute paths for the whole job
+       echo "BAWT_HOME=${{ github.workspace }}/Bawt-3.2.0" >> $GITHUB_ENV
+       echo "BAWT_ROOT=${{ github.workspace }}/BawtBuild" >> $GITHUB_ENV
+       mkdir -p "${{ github.workspace }}/BawtBuild"
 
     # --- NATIVE X64 PATH ---
     - name: Build Tcl/Tk (x64)
@@ -59,15 +61,15 @@ jobs:
         
         curl -L -o Bawt-3.2.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip
         unzip -o Bawt-3.2.0.zip
-        chmod u+x Bawt-3.2.0/tclkit-Linux64-intel
+        chmod u+x ${{ env.BAWT_HOME }}/tclkit-Linux64-intel
         
-        ./Bawt-3.2.0/tclkit-Linux64-intel Bawt-3.2.0/Bawt.tcl \
-          --rootdir "$(pwd)/BawtBuild" \
+        ${{ env.BAWT_HOME }}/tclkit-Linux64-intel ${{ env.BAWT_HOME }}/Bawt.tcl \
+          --rootdir "${{ env.BAWT_ROOT }}" \
           --architecture x64 \
           --compiler gcc \
           --tclversion ${{ matrix.tcl-version }} \
           --numjobs 4 --complete --nosubdirs --exclude ffmpeg \
-          Bawt-3.2.0/Setup/${{ github.event.inputs.config }}.bawt all
+          "${{ env.BAWT_HOME }}/Setup/${{ github.event.inputs.config }}.bawt" all
 
     # --- EMULATED ARM64 PATH ---
     - name: Build Tcl/Tk (arm64 via QEMU)
@@ -85,19 +87,18 @@ jobs:
             
             curl -L -o Bawt-3.2.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip
             unzip -o Bawt-3.2.0.zip
-            chmod u+x Bawt-3.2.0/tclkit-Linux64-arm
+            chmod u+x ${{ env.BAWT_HOME }}/tclkit-Linux64-arm
             
-            # Use --architecture x64 because BAWT doesn't recognize 'arm64'. 
-            # The underlying ARM compiler will still produce ARM binaries.
-            ./Bawt-3.2.0/tclkit-Linux64-arm Bawt-3.2.0/Bawt.tcl \
-              --rootdir \"$(pwd)/BawtBuild\" \
+            # Use Absolute paths for BOTH the Tclkit, the script, and the setup file
+            ${{ env.BAWT_HOME }}/tclkit-Linux64-arm ${{ env.BAWT_HOME }}/Bawt.tcl \
+              --rootdir \"${{ env.BAWT_ROOT }}\" \
               --architecture x64 \
               --compiler gcc \
               --tclversion ${{ matrix.tcl-version }} \
               --numjobs 4 --complete --nosubdirs --exclude ffmpeg \
-              Bawt-3.2.0/Setup/${{ github.event.inputs.config }}.bawt all
+              \"${{ env.BAWT_HOME }}/Setup/${{ github.event.inputs.config }}.bawt\" all
           "
-        sudo chown -R $USER:$USER BawtBuild
+        sudo chown -R $USER:$USER "${{ env.BAWT_ROOT }}"
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
