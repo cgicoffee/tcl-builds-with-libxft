@@ -72,7 +72,15 @@ jobs:
       run: |
         echo GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT
         # Explicitly using Intel kit here
-        Bawt-3.2.0/tclkit-Linux64-intel Bawt-3.2.0/Bawt.tcl --rootdir $GH_BAWT_BUILDROOT --architecture ${{ matrix.architecture }} --compiler gcc --numjobs 4 --complete --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg ${{ github.event.inputs.config }}.bawt all
+        Bawt-3.2.0/tclkit-Linux64-intel Bawt-3.2.0/Bawt.tcl \
+          --rootdir $GH_BAWT_BUILDROOT \
+          --architecture ${{ matrix.architecture }} \
+          --compiler gcc \
+          --numjobs 4 \
+          --complete \
+          --tclversion ${{ matrix.tcl-version }} \
+          --exclude ffmpeg \
+          ${{ github.event.inputs.config }}.bawt all
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
@@ -114,8 +122,9 @@ jobs:
           echo "Building for ARM64 in $GH_BAWT_BUILDROOT"
 
           # Install dependencies (Native ARM64 packages via apt in QEMU)
+          # Including cmake here to allow excluding the BAWT-compiled version for stability
           apt-get update
-          apt-get install -y build-essential curl p7zip-full zip \
+          apt-get install -y build-essential curl p7zip-full zip cmake \
             libx11-dev libcups2-dev libcairo2-dev libglx-dev \
             libglu1-mesa-dev libasound2-dev libxft-dev libfontconfig1-dev libxrender-dev
 
@@ -131,16 +140,17 @@ jobs:
 
           # Build Tcl/Tk Distribution (Direct call using tclkit-Linux64-arm)
           # Note: --architecture x64 is passed to BAWT for bitness (64 vs 32).
-          # The actual machine architecture is determined by the environment (ARM64 QEMU).
+          # --exclude cmake and set --numjobs 2 prevent segmentation faults in emulation
           
           Bawt-3.2.0/tclkit-Linux64-arm Bawt-3.2.0/Bawt.tcl \
             --rootdir "$GH_BAWT_BUILDROOT" \
             --architecture x64 \
             --compiler gcc \
-            --numjobs 4 \
+            --numjobs 2 \
             --complete \
             --tclversion "$GH_TCL_VERSION" \
             --exclude ffmpeg \
+            --exclude cmake \
             "$GH_CONFIG.bawt" all
 
     - name: Upload distribution
