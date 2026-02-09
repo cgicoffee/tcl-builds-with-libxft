@@ -75,11 +75,14 @@ jobs:
     - name: Build Tcl/Tk (arm64 via QEMU)
       if: matrix.architecture == 'arm64'
       run: |
-        # Use set -e inside the container so it fails immediately on network errors
+        # Force an absolute path on the host for the build root
+        # This ensures Docker writes to the mounted workspace and not its own internal disk
+        HOST_BUILDROOT="$(pwd)/${{ env.GH_BAWT_BUILDROOT }}"
+        
         docker run --rm --platform linux/arm64 \
           -v ${{ github.workspace }}:${{ github.workspace }} \
           -w ${{ github.workspace }} \
-          -e GH_BAWT_BUILDROOT="${{ env.GH_BAWT_BUILDROOT }}" \
+          -e HOST_BUILDROOT="$HOST_BUILDROOT" \
           debian:11 bash -c "
             set -e
             apt-get update
@@ -91,18 +94,21 @@ jobs:
             unzip -o Bawt-3.2.0.zip
             chmod u+x Bawt-3.2.0/Build*.sh Bawt-3.2.0/tclkit*
             
-            # Navigate into BAWT folder to use the wrapper script as per documentation
             cd Bawt-3.2.0
             
-            # The Build-Linux.sh wrapper correctly translates architecture to 'arm' and '64'
-            # We use ../ for the rootdir because we just entered the Bawt-3.2.0 subdirectory
+            # Using the absolute host path for rootdir to guarantee persistence
             ./Build-Linux.sh arm 64 gcc Setup/${{ github.event.inputs.config }}.bawt \
-              --rootdir ../\$GH_BAWT_BUILDROOT --numjobs 4 --complete \
+              --rootdir \"\$HOST_BUILDROOT\" --numjobs 4 --complete \
               --tclversion ${{ matrix.tcl-version }} --exclude ffmpeg all
+            
+            echo '--- DEBUG: LOCATING PRODUCED FILES ---'
+            find \"\$HOST_BUILDROOT\" -maxdepth 10 -name 'opt'
           "
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
         name: tcl-distribution-linux-${{ matrix.tcl-version }}-${{ github.event.inputs.config }}-${{ matrix.architecture }}
+        # The wildcard will (???) find the distribution folder regardless of whether 
+        # BAWT used 'arm64', 'Arm64', or 'aarch64' as the architecture folder name.
         path: ${{ env.GH_BAWT_BUILDROOT }}/**/Distribution/opt/Tcl
