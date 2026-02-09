@@ -89,72 +89,64 @@ jobs:
         path: ${{ env.GH_BAWT_BUILDDIR }}/Release/Distribution/opt/Tcl
 
   # -----------------------------------------------------------------------
-  # Job 2: ARM64 (via QEMU)
+  # Job 2: ARM64 (Native Runner)
   # -----------------------------------------------------------------------
   build-linux-arm64:
     if: contains(github.event.inputs.architectures, 'arm64')
-    runs-on: ubuntu-22.04
+    # Using the native ARM64 runner for Public repos/Team plans
+    runs-on: ubuntu-22.04-arm
     strategy:
       matrix:
+        # BAWT uses 'x64' label for 64-bit builds regardless of instruction set
+        architecture: ['x64']
         tcl-version: ${{ fromJSON(github.event.inputs.tcl-versions) }}
 
     steps:
+    - name: Setup BAWT environment
+      run: |
+       GH_BAWT_BUILDROOT="BawtBuild/${{ matrix.tcl-version }}/${{ github.event.inputs.config }}"
+       GH_BAWT_BUILDDIR="$GH_BAWT_BUILDROOT/Linux/${{ matrix.architecture }}"
+       echo "GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT" >> $GITHUB_ENV
+       echo "GH_BAWT_BUILDDIR=$GH_BAWT_BUILDDIR" >> $GITHUB_ENV
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        # Keeping smooth font rendering libs: libxft-dev libfontconfig1-dev libxrender-dev
+        sudo apt-get install -y build-essential curl p7zip-full zip \
+          libx11-dev libcups2-dev libcairo2-dev libglx-dev \
+          libglu1-mesa-dev libasound2-dev libxft-dev libfontconfig1-dev libxrender-dev
+
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
-    - name: Build Tcl/Tk Distribution (ARM64 via QEMU)
-      uses: uraimo/run-on-arch-action@v2
-      with:
-        arch: aarch64
-        distro: ubuntu22.04
-        
-        env: |
-          GH_TCL_VERSION: ${{ matrix.tcl-version }}
-          GH_CONFIG: ${{ github.event.inputs.config }}
-        
-        githubToken: ${{ github.token }}
-        
-        run: |
-          # Setup Environment Variables
-          GH_BAWT_BUILDROOT="BawtBuild/${GH_TCL_VERSION}/${GH_CONFIG}"
-          GH_BAWT_BUILDDIR="$GH_BAWT_BUILDROOT/Linux/x64"
-          
-          echo "Building for ARM64 in $GH_BAWT_BUILDROOT"
+    - name: Download BAWT framework
+      run: |
+        curl -L -o Bawt-3.2.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip
+        unzip Bawt-3.2.0.zip
 
-          # Install dependencies (Native ARM64 packages via apt in QEMU)
-          # Including cmake here to allow excluding the BAWT-compiled version for stability
-          apt-get update
-          apt-get install -y build-essential curl p7zip-full zip cmake \
-            libx11-dev libcups2-dev libcairo2-dev libglx-dev \
-            libglu1-mesa-dev libasound2-dev libxft-dev libfontconfig1-dev libxrender-dev
+    - name: Set permissions
+      run: |
+        cd Bawt-3.2.0
+        chmod u+x Build*.sh
+        chmod u+x tclkit*
 
-          # Download BAWT framework
-          curl -L -o Bawt-3.2.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip
-          unzip -q Bawt-3.2.0.zip
-
-          # Set permissions
-          cd Bawt-3.2.0
-          chmod u+x Build*.sh
-          chmod u+x tclkit*
-          cd ..
-
-          # Build Tcl/Tk Distribution (Direct call using tclkit-Linux64-arm)
-          # Note: --architecture x64 is passed to BAWT for bitness (64 vs 32).
-          # --exclude cmake and set --numjobs 2 prevent segmentation faults in emulation
-          
-          Bawt-3.2.0/tclkit-Linux64-arm Bawt-3.2.0/Bawt.tcl \
-            --rootdir "$GH_BAWT_BUILDROOT" \
-            --architecture x64 \
-            --compiler gcc \
-            --numjobs 2 \
-            --complete \
-            --tclversion "$GH_TCL_VERSION" \
-            --exclude ffmpeg \
-            --exclude cmake \
-            "$GH_CONFIG.bawt" all
+    - name: Build Tcl/Tk Distribution
+      run: |
+        echo GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT
+        # Explicitly using ARM kit here
+        Bawt-3.2.0/tclkit-Linux64-arm Bawt-3.2.0/Bawt.tcl \
+          --rootdir $GH_BAWT_BUILDROOT \
+          --architecture ${{ matrix.architecture }} \
+          --compiler gcc \
+          --numjobs 4 \
+          --complete \
+          --tclversion ${{ matrix.tcl-version }} \
+          --exclude ffmpeg \
+          ${{ github.event.inputs.config }}.bawt all
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
         name: tcl-distribution-linux-${{ matrix.tcl-version }}-${{ github.event.inputs.config }}-arm64
-        path: BawtBuild/${{ matrix.tcl-version }}/${{ github.event.inputs.config }}/Linux/x64/Release/Distribution/opt/Tcl
+        path: ${{ env.GH_BAWT_BUILDDIR }}/Release/Distribution/opt/Tcl
