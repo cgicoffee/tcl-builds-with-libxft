@@ -95,7 +95,7 @@ sudo mkdir -p /opt/tcl9
 sudo unzip ~/Downloads/TclTk_9.0.3_BI_xft_v1.1_linux_arm64.zip -d /opt/tcl9
 # Ensure root owns the files but everyone can read/execute
 sudo chown -R root:root /opt/tcl9
-sudo chmod -R 755 /opt/tcl9cd /opt/tcl9/lib
+sudo chmod -R 755 /opt/tcl9
 ```
 
 3. `ldconfig` expects a specific naming convention where, for instance, a versioned shared library `libffi.so.8.1.4` has a `libffi.so.8`  symbolic link pointing to it. In case of a ZIP distribution (the one in this repo), *zipping turns that link into a regular file*, and ldconfig will complain if you try to run `sudo ldconfig` right after unpacking:  `"ldconfig: /opt/tcl9/lib/libffi.so.8 is not a symbolic link"`. To avoid this, restore the symlink with the following commands:
