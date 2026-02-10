@@ -4,8 +4,8 @@ Experimental Tcl/Tk 9.x "Batteries Included" Linux builds with access to system 
 
 Available architectures in [Releases](https://github.com/cgicoffee/tcl-builds-with-libxft/releases):
 
-- x86_64 (built in Ubuntu 22.04-x64)
-- ARM64 (built in Ubuntu 22.04-arm)
+- x86_64. Built in Ubuntu 22.04-x64. Tested in Ubuntu 22.04/24.04, Linux Mint 22.2
+- ARM64. Built in Ubuntu 22.04-arm. Tested in Ubuntu 24.04, OrangePi OS (Arch Linux-based, rolling)
 
 **Only 64-bit Tcl 9 builds for Linux here**. As for other platforms:
 
