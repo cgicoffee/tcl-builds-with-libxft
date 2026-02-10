@@ -25,6 +25,8 @@ Experimental batteries-included build of Tcl 9.0.3 for Linux compiled with Xft S
 
 ## User-Space Installation 
 
+Quick installation, or an option for cases when no root access is available. Less versatile than a [system-wise](#system-wise-installation) deployment.
+
 1. Extract it to a folder in your home directory, e.g., `~/tcl9`
 2. Add the binaries and libraries to your shell path. Open your `.bashrc`: `nano ~/.bashrc` and Add this at the end (change the path if needed):
 
@@ -83,7 +85,7 @@ if {[info exists ::env(SSL_CERT_FILE)] && [file exists $::env(SSL_CERT_FILE)]} {
 
 ## System-Wise Installation
 
-If you have root permissions and know what you're doing, you can install Tcl/Tk 9 system-wise, for all users. This is a vastly superior option, since it solves the missing ssl certs problem, as well as makes Tcl/Tk 9 available to all users by default, including all the numerous packages this distribution comes with. Th following guide has been successfully used to install this bundle in several Linux distros: Linux Mint 22.2, Ubuntu 22.04 on PC, and Arch Linux-based OrangePi OS (arm64) on an OrangePi SBC.
+If you have root permissions and know what you're doing, you can install Tcl/Tk 9 _system-wise_. This is a vastly superior option, since it solves the missing ssl certs problem, as well as makes Tcl/Tk 9 available to all users by default, including all the numerous packages this distribution comes with. Th following guide has been successfully used to install this bundle in several Linux distros: Linux Mint 22.2, Ubuntu 22.04 on PC, Arch Linux-based OrangePi OS (arm64) and a Debian-based RaspberryPi OS (arm64).
 
 1. Download a distribution ZIP for your architecture from [Releases](https://github.com/serpinio/tcl-builds-with-libxft/releases) and put it into `~/Downloads`
 2. Run the following commands to unzip the package to `/opt/` and configure it:
