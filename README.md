@@ -91,8 +91,8 @@ If you have root permissions and know what you're doing, you can install Tcl/TkÂ
 ```bash
 # Create the directory
 sudo mkdir -p /opt/tcl9
-# Extract your zip. Make sure to update the name of the zip file below!
-sudo unzip ~/Downloads/TclTk_9.0.3_BI_xft_v1.1_linux_arm64.zip -d /opt/tcl9
+# Extract your zip. !!! Make sure to change the name of the zip file below!
+sudo unzip ~/Downloads/TclTk_9.0.3_BI_xft_v1.1_linux_x86_64.zip -d /opt/tcl9
 # Ensure root owns the files but everyone can read/execute
 sudo chown -R root:root /opt/tcl9
 sudo chmod -R 755 /opt/tcl9
