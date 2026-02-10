@@ -10,7 +10,7 @@ Available architectures in [Releases](https://github.com/serpinio/tcl-builds-wit
 **Only 64-bit Tcl 9 builds for Linux here**. As for other platforms:
 
 - For Windows the amazing [Magicsplat's Tcl/Tk 9](https://www.magicsplat.com/tcl-installer/) is available
-- For macOS [use Homebrew](https://formulae.brew.sh/formula/tcl-tk)
+- For macOS [refer to the original repo](https://github.com/apnadkarni/tcl-builds/releases) or [use Homebrew](https://formulae.brew.sh/formula/tcl-tk)
 
 ## What This Is
 
