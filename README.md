@@ -63,7 +63,7 @@ If you know what you're doing and want to install Tcl/Tk 9 system-wise, for all
 # Create the directory
 sudo mkdir -p /opt/tcl9
 # Extract your zip. Make sure to update the name of the zip file below!
-sudo unzip /home/$USER/Downloads/TclTk_9.0.3_BI_xft_v1.1_linux_arm64.zip -d /opt/tcl9
+sudo unzip ~/Downloads/TclTk_9.0.3_BI_xft_v1.1_linux_arm64.zip -d /opt/tcl9
 # Ensure root owns the files but everyone can read/execute
 sudo chown -R root:root /opt/tcl9
 sudo chmod -R 755 /opt/tcl9cd /opt/tcl9/lib
