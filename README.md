@@ -42,7 +42,7 @@ alias wish='wish9.0'
 4. Run: `source ~/.bashrc`
 5. Check by running `tclsh` or `wish` in the Terminal. Type `info patchlevel` — it should return "9.0.3. **Note:** If you have another version of Tcl/Tk installed in the system, adding these environment variables will shadow all calls to "default" `tclsh` and `wish` in the console, replacing them with ones from this distribution. To revert back, simply remove this block from `~/.bashrc` and call `source ~/.bashrc`
 
-6. Finally, configure Linux Linker. To make `LD_LIBRARY_PATH` discoverable when running .tcl scripts not from an already open terminal, but also via a file manager (which usually doesn't read `.bashrc` upon spawning the terminal for `-x` executable files), you need to let the Linux linker know about the new `tcl9` folder globally:
+6. Finally, _if you have root access_, configure the Linux Linker. To make `LD_LIBRARY_PATH` discoverable when running .tcl scripts not from an already open terminal, but also via a file manager (which usually doesn't read `.bashrc` upon spawning the terminal for `-x` executable files), you need to let the Linux linker know about the new `tcl9` folder globally:
    1. Create a new config file: `sudo nano /etc/ld.so.conf.d/tcl9.conf`
    2. Paste the path to your lib folder (replace "username" with yours): `/home/username/tcl9/lib`
    3. Save and run: `sudo ldconfig`
