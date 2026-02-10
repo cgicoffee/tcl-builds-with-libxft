@@ -184,7 +184,7 @@ proc get_all_packages {} {
 get_all_packages
 ```
 
-6. As a final test, if you're using a desktop environment with a file manager (like Caja, Nautilus, Thunar etc) — set up an association for .tcl files to execute with `tclsh` and try opening some of the files right from the file manager, to see that the environment variables and packages are picked up correctly thanks to the linker configuration done above
+8. As a final test, if you're using a desktop environment with a file manager (like Caja, Nautilus, Thunar etc) — set up an association for .tcl files to execute with `tclsh` and try opening some of the files directly via the file manager, to see that the environment variables and packages are picked up correctly thanks to the linker configuration done above
 
 ## Included Modules
 
