@@ -16,8 +16,7 @@ Available architectures in [Releases](https://github.com/cgicoffee/tcl-builds-wi
 
 1. [User-Space Installation](#user-space-installation)
 2. [System-Wise Installation](#system-wise-installation)
-3. [Tips And Tricks](#tips-and-tricks)
-4. [Included Modules](#included-modules)
+3. [Included Modules](#included-modules)
 
 ## Description
 
@@ -51,6 +50,37 @@ alias wish='wish9.0'
 From this moment on, you should be able to run tcl scripts via anything that spawns a clean terminal which doesn't set up environment vars specified in `.bashrc`. If you **don't** do this, you'll be getting this error:
 
 `/home/username/tcl9/bin/wish9.0: error while loading shared libraries: libtcl9tk9.0.so: cannot open shared object file: No such file or directory `
+
+### How To Fix HTTPS "Failed To Use Socket" Errors
+
+**Important: this workaround is relevant only for the user-space installation**. System-wide install covers this with the global profile script. Still, bootstrapping tls cert paths in tcl scripts is good practice, especially if you're planning to distribute your scripts to users of all sorts of distros and want to ensure tls works right.
+
+Since this is a "portable" distribution, the `tls` package needs to be told where *your* Linux distro stores its Root Certificates (Trust Store). Place this tls bootstraping snippet at the top of any script making `https` requests. 
+
+```tcl
+# Dependencies
+package require http
+package require tls
+
+# SSL/TLS Certificate Linux Path Bootstrap
+# If provided, accept the existing env variable
+if {[info exists ::env(SSL_CERT_FILE)] && [file exists $::env(SSL_CERT_FILE)]} {
+    http::register https 443 [list ::tls::socket -autoservername 1 -cafile $::env(SSL_CERT_FILE)]
+} else {
+    # Otherwise check the list of common CA bundle locations
+    set ca_bundles { "/etc/ssl/certs/ca-certificates.crt" "/etc/pki/tls/certs/ca-bundle.crt" "/etc/ssl/ca-bundle.pem" }
+    set found_ca 0
+    foreach path $ca_bundles {
+        if {[file exists $path]} {
+            http::register https 443 [list ::tls::socket -autoservername 1 -cafile $path]; set found_ca 1; break
+        }
+    }
+    # Default registration (for all OSes as well)
+    if {!$found_ca} { http::register https 443 [list ::tls::socket -autoservername 1] }
+    unset -nocomplain ca_bundles found_ca path
+}
+# --- SSL/TLS Certificate Linux Path Bootstrap ---
+```
 
 ## System-Wise Installation
 
@@ -108,6 +138,16 @@ export TCLLIBPATH="/opt/tcl9/lib $TCLLIBPATH"
 # Aliases for interactive shells
 alias tclsh='tclsh9.0'
 alias wish='wish9.0'
+
+# Auto-detect and export the SSL Trust Store for Tcl and other tools
+for cert in /etc/ssl/certs/ca-certificates.crt \
+            /etc/pki/tls/certs/ca-bundle.crt \
+            /etc/ssl/ca-bundle.pem; do
+    if [ -f "$cert" ]; then
+        export SSL_CERT_FILE="$cert"
+        break
+    fi
+done
 ```
 
 5. (Optional, but recommended) Create symbolic links:
@@ -145,38 +185,6 @@ get_all_packages
 ```
 
 6. As a final test, if you're using a desktop environment with a file manager (like Caja, Nautilus, Thunar etc) — set up an association for .tcl files to execute with `tclsh` and try opening some of the files right from the file manager, to see that the environment variables and packages are picked up correctly thanks to the linker configuration done above
-
-## Tips And Tricks
-
-### How To Fix HTTPS "Failed To Use Socket" Errors
-
-Since this is a "portable" distribution, the `tls` package needs to be told where *your* Linux distro stores its Root Certificates (Trust Store). Place this tls bootstraping snippet at the top of any script making `https` requests. This is a good practice overall, especially if you're planning to distribute your tcl scripts to users of all sorts of distros and want to ensure tls works right.
-
-```tcl
-# Dependencies
-package require http
-package require tls
-
-# SSL/TLS Certificate Linux Path Bootstrap
-# If provided, accept the existing env variable
-if {[info exists ::env(SSL_CERT_FILE)] && [file exists $::env(SSL_CERT_FILE)]} {
-    http::register https 443 [list ::tls::socket -autoservername 1 -cafile $::env(SSL_CERT_FILE)]
-} else {
-    # Otherwise check the list of common CA bundle locations
-    set ca_bundles { "/etc/ssl/certs/ca-certificates.crt" "/etc/pki/tls/certs/ca-bundle.crt" "/etc/ssl/ca-bundle.pem" }
-    set found_ca 0
-    foreach path $ca_bundles {
-        if {[file exists $path]} {
-            http::register https 443 [list ::tls::socket -autoservername 1 -cafile $path]; set found_ca 1; break
-        }
-    }
-    # Default registration (for all OSes as well)
-    if {!$found_ca} { http::register https 443 [list ::tls::socket -autoservername 1] }
-    unset -nocomplain ca_bundles found_ca path
-}
-# --- SSL/TLS Certificate Linux Path Bootstrap ---
-```
-
 
 ## Included Modules
 
