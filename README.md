@@ -126,9 +126,11 @@ sudo ldconfig
 ```bash
 # Create a global profile script
 sudo nano /etc/profile.d/tcl9.sh
+```
 
-# PASTE THIS BLOCK INTO THE FILE:
+6. Paste these directives into the file, and save it
 
+```
 # Tcl 9 Global Environment
 export TCL_ROOT=/opt/tcl9
 export PATH="$TCL_ROOT/bin:$PATH"
@@ -149,15 +151,15 @@ for cert in /etc/ssl/certs/ca-certificates.crt \
 done
 ```
 
-5. (Optional, but recommended) Create symbolic links:
+7. (Optional, but recommended) Create symbolic links:
 
 ```bash
 sudo ln -sf /opt/tcl9/bin/tclsh9.0 /usr/local/bin/tclsh
 sudo ln -sf /opt/tcl9/bin/wish9.0 /usr/local/bin/wish
 ```
 
-6. **Log out of the user session, and log back in**, or reboot the OS to see the changes
-7. To test, create a file `list_packages.tcl` with the following contents and execute it using `tclsh list_packages.tcl` — you should see "Tcl/Tk version: 9.0.3" and a long list of packages which are included in this distribution, confirming successful installation:
+8. **Log out of the user session, and log back in**, or reboot the OS to see the changes
+9. To test, create a file `list_packages.tcl` with the following contents and execute it using `tclsh list_packages.tcl` — you should see "Tcl/Tk version: 9.0.3" and a long list of packages which are included in this distribution, confirming successful installation:
 
 ```tcl
 # list_packages.tcl
@@ -183,4 +185,4 @@ proc get_all_packages {} {
 get_all_packages
 ```
 
-8. As a final test, if you're using a desktop environment with a file manager (like Caja, Nautilus, Thunar etc) — set up an association for .tcl files to execute with `tclsh` and try opening some of the files directly via the file manager, to see that the environment variables and packages are picked up correctly thanks to the linker configuration done above
+10. As a final test, if you're using a desktop environment with a file manager (like Caja, Nautilus, Thunar etc) — set up an association for .tcl files to execute with `tclsh` and try opening some of the files directly via the file manager, to see that the environment variables and packages are picked up correctly thanks to the linker configuration done above
