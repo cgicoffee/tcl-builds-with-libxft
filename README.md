@@ -25,7 +25,7 @@ Experimental batteries-included build of Tcl 9.0.3 for Linux compiled with Xft S
 
 ## User-Space Installation 
 
-Quick installation, or an option for cases when no root access is available. Less versatile than a [system-wise](#system-wise-installation) deployment.
+"Quick'n'dirty" installation, or an option for cases when no root access is available. Less versatile than a [system-wise](#system-wise-installation) deployment.
 
 1. Extract it to a folder in your home directory, e.g., `~/tcl9`
 2. Add the binaries and libraries to your shell path. Open your `.bashrc`: `nano ~/.bashrc` and Add this at the end (change the path if needed):
@@ -43,7 +43,7 @@ alias wish='wish9.0'
 4. Run: `source ~/.bashrc`
 5. Check by running `tclsh` or `wish` in the Terminal. Type `info patchlevel` — it should return "9.0.3. **Note:** If you have another version of Tcl/Tk installed in the system, adding these environment variables will shadow all calls to "default" `tclsh` and `wish` in the console, replacing them with ones from this distribution. To revert back, simply remove this block from `~/.bashrc` and call `source ~/.bashrc`
 
-6. Finally, _if you have root access_, configure the Linux Linker. To make `LD_LIBRARY_PATH` discoverable when running .tcl scripts not from an already open terminal, but also via a file manager (which usually doesn't read `.bashrc` upon spawning the terminal for `-x` executable files), you need to let the Linux linker know about the new `tcl9` folder globally:
+6. Finally, _if you have root access_, make your life easier by configuring the Linux Linker. To make `LD_LIBRARY_PATH` discoverable when running .tcl scripts not from an already open terminal, but also via a file manager (which usually doesn't read `.bashrc` upon spawning the terminal for `-x` executable files), you need to let the Linux linker know about the new `tcl9` folder globally:
    1. Create a new config file: `sudo nano /etc/ld.so.conf.d/tcl9.conf`
    2. Paste the path to your lib folder (replace "username" with yours): `/home/username/tcl9/lib`
    3. Save and run: `sudo ldconfig`
