@@ -1,6 +1,6 @@
 # What This Is
 
-Experimental Tcl/Tk 9.x "Batteries Included" Linux builds with access to system fonts (xft).
+Experimental Tcl/Tk 9.x "Batteries Included" Linux builds with access to system fonts (xft) based on Paul Obermeier's [BAWT](https://www.tcl3d.org/bawt/) framework.
 
 Available architectures in [Releases](https://github.com/cgicoffee/tcl-builds-with-libxft/releases):
 
