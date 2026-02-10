@@ -108,7 +108,7 @@ REAL_FILE=$(ls libffi.so.8.* | head -n 1)
 sudo rm libffi.so.8
 # Create a proper symbolic link
 sudo ln -s "$REAL_FILE" libffi.so.8
-# Run ldconfig again
+# NOW ldconfig should succeed
 sudo ldconfig
 ```
 
