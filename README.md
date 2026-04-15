@@ -12,6 +12,10 @@ Available architectures in [Releases](https://github.com/cgicoffee/tcl-builds-wi
 - For Windows the amazing [Magicsplat's Tcl/Tk 9](https://www.magicsplat.com/tcl-installer/) is available
 - For macOS [refer to the original repo](https://github.com/apnadkarni/tcl-builds/releases) or [use Homebrew](https://formulae.brew.sh/formula/tcl-tk)
 
+## Learning Resources
+
+If you don't know what Tcl/Tk is, head over [to this blog post of mine](https://cgicoffee.com/blog/2026/04/tcl-tk-develop-cross-platform-cli-gui-tools-tutorial-guide) to find out.
+
 ## Contents
 
 1. [User-Space Installation](#user-space-installation)
