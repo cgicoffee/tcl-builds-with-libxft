@@ -23,7 +23,7 @@ If you don't know what Tcl/Tk is, head over [to this blog post of mine](https://
 
 ## Description
 
-Experimental batteries-included build of Tcl 9.0.3 for Linux compiled with Xft Support for smooth font rendering, meant to be used in distros that either still distribute Tcl/Tk **8.6** or lack tcl packages in repos.
+Experimental batteries-included build of Tcl 9.0.4 for Linux compiled with Xft Support for smooth font rendering, meant to be used in distros that either still distribute Tcl/Tk **8.6** or lack tcl packages in repos.
 
 <img width="422" height="436" alt="image" src="https://github.com/user-attachments/assets/846bbeba-36ea-4940-a60d-956a3b12dde8" />
 
@@ -45,7 +45,7 @@ alias wish='wish9.0'
 ```
 
 4. Run: `source ~/.bashrc`
-5. Check by running `tclsh` or `wish` in the Terminal. Type `info patchlevel` — it should return "9.0.3. **Note:** If you have another version of Tcl/Tk installed in the system, adding these environment variables will shadow all calls to "default" `tclsh` and `wish` in the console, replacing them with ones from this distribution. To revert back, simply remove this block from `~/.bashrc` and call `source ~/.bashrc`
+5. Check by running `tclsh` or `wish` in the Terminal. Type `info patchlevel` — it should return "9.0.4. **Note:** If you have another version of Tcl/Tk installed in the system, adding these environment variables will shadow all calls to "default" `tclsh` and `wish` in the console, replacing them with ones from this distribution. To revert back, simply remove this block from `~/.bashrc` and call `source ~/.bashrc`
 
 6. Finally, _if you have root access_, make your life easier by configuring the Linux Linker. To make `LD_LIBRARY_PATH` discoverable when running .tcl scripts not from an already open terminal, but also via a file manager (which usually doesn't read `.bashrc` upon spawning the terminal for `-x` executable files), you need to let the Linux linker know about the new `tcl9` folder globally:
    1. Create a new config file: `sudo nano /etc/ld.so.conf.d/tcl9.conf`
@@ -91,14 +91,14 @@ if {[info exists ::env(SSL_CERT_FILE)] && [file exists $::env(SSL_CERT_FILE)]} {
 
 If you have root permissions and know what you're doing, you can install Tcl/Tk 9 _system-wise_. This is a vastly superior option, since it solves the missing ssl certs problem, as well as makes Tcl/Tk 9 available to all users by default, including all the numerous packages this distribution comes with. Th following guide has been successfully used to install this bundle in several Linux distros: Linux Mint 22.2, Ubuntu 22.04 on PC, Arch Linux-based OrangePi OS (arm64) and a Debian-based RaspberryPi OS (arm64).
 
-1. Download a distribution ZIP for your architecture from [Releases](https://github.com/serpinio/tcl-builds-with-libxft/releases) and put it into `~/Downloads`
+1. Download a distribution ZIP for your architecture from [Releases](https://github.com/cgicoffee/tcl-builds-with-libxft/releases) and put it into `~/Downloads`
 2. Run the following commands to unzip the package to `/opt/` and configure it:
 
 ```bash
 # Create the directory
 sudo mkdir -p /opt/tcl9
 # Extract your zip. !!! Make sure to change the name of the zip file below!
-sudo unzip ~/Downloads/TclTk_9.0.3_BI_xft_v1.1_linux_x86_64.zip -d /opt/tcl9
+sudo unzip ~/Downloads/TclTk_9.0.4_BI_xft_linux_x86_x64.zip -d /opt/tcl9
 # Ensure root owns the files but everyone can read/execute
 sudo chown -R root:root /opt/tcl9
 sudo chmod -R 755 /opt/tcl9
@@ -165,7 +165,7 @@ sudo ln -sf /opt/tcl9/bin/wish9.0 /usr/local/bin/wish
 ```
 
 8. **Log out of the user session, and log back in**, or reboot the OS to see the changes
-9. To test, create a file `list_packages.tcl` with the following contents and execute it using `tclsh list_packages.tcl` — you should see "Tcl/Tk version: 9.0.3" and a long list of packages which are included in this distribution, confirming successful installation:
+9. To test, create a file `list_packages.tcl` with the following contents and execute it using `tclsh list_packages.tcl` — you should see "Tcl/Tk version: 9.0.4" and a long list of packages which are included in this distribution, confirming successful installation:
 
 ```tcl
 # list_packages.tcl
