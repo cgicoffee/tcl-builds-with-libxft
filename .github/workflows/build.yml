@@ -7,8 +7,8 @@ on:
         required: true
         type: choice
         options:
-          - '["9.0.3"]'
-        default: '["9.0.3"]'
+          - '["9.0.4"]'
+        default: '["9.0.4"]'
       architectures:
         required: true
         type: choice
@@ -60,12 +60,12 @@ jobs:
 
     - name: Download BAWT framework
       run: |
-        curl -L -o Bawt-3.2.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip
-        unzip Bawt-3.2.0.zip
+        curl -L -o Bawt-3.3.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.3.0.zip
+        unzip Bawt-3.3.0.zip
 
     - name: Set permissions
       run: |
-        cd Bawt-3.2.0
+        cd Bawt-3.3.0
         chmod u+x Build*.sh
         chmod u+x tclkit*
 
@@ -73,7 +73,7 @@ jobs:
       run: |
         echo GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT
         # Explicitly using Intel kit here
-        Bawt-3.2.0/tclkit-Linux64-intel Bawt-3.2.0/Bawt.tcl \
+        Bawt-3.3.0/tclkit-Linux64-intel Bawt-3.3.0/Bawt.tcl \
           --rootdir $GH_BAWT_BUILDROOT \
           --architecture ${{ matrix.architecture }} \
           --compiler gcc \
@@ -124,12 +124,12 @@ jobs:
 
     - name: Download BAWT framework
       run: |
-        curl -L -o Bawt-3.2.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.2.0.zip
-        unzip Bawt-3.2.0.zip
+        curl -L -o Bawt-3.3.0.zip https://www.bawt.tcl3d.org/download/Framework/Bawt-3.3.0.zip
+        unzip Bawt-3.3.0.zip
 
     - name: Set permissions
       run: |
-        cd Bawt-3.2.0
+        cd Bawt-3.3.0
         chmod u+x Build*.sh
         chmod u+x tclkit*
 
@@ -137,7 +137,7 @@ jobs:
       run: |
         echo GH_BAWT_BUILDROOT=$GH_BAWT_BUILDROOT
         # Explicitly using ARM kit here
-        Bawt-3.2.0/tclkit-Linux64-arm Bawt-3.2.0/Bawt.tcl \
+        Bawt-3.3.0/tclkit-Linux64-arm Bawt-3.3.0/Bawt.tcl \
           --rootdir $GH_BAWT_BUILDROOT \
           --architecture ${{ matrix.architecture }} \
           --compiler gcc \
