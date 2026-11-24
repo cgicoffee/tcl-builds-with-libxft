@@ -23,7 +23,7 @@ If you don't know what Tcl/Tk is, head over [to this blog post of mine](https://
 
 ## Description
 
-Experimental batteries-included build of Tcl 9.0.4 for Linux compiled with Xft Support for smooth font rendering, meant to be used in distros that either still distribute Tcl/Tk **8.6** or lack tcl packages in repos.
+Experimental batteries-included build of Tcl 9.0.4 for Linux compiled with Xft Support for smooth font rendering, meant to be used in distros that either still distribute Tcl/Tk **8.6** or lack Tcl packages in repos.
 
 <img width="422" height="436" alt="image" src="https://github.com/user-attachments/assets/846bbeba-36ea-4940-a60d-956a3b12dde8" />
 
@@ -32,7 +32,7 @@ Experimental batteries-included build of Tcl 9.0.4 for Linux compiled with Xft S
 "Quick'n'dirty" installation, or an option for cases when no root access is available. Less versatile than a [system-wise](#system-wise-installation) deployment.
 
 1. Extract it to a folder in your home directory, e.g., `~/tcl9`
-2. Add the binaries and libraries to your shell path. Open your `.bashrc`: `nano ~/.bashrc` and Add this at the end (change the path if needed):
+2. Add the binaries and libraries to your shell path. Open your `.bashrc`: `nano ~/.bashrc` and add this at the end (change the path if needed):
 
 ```bash
 # Tcl 9 Environment
@@ -45,7 +45,7 @@ alias wish='wish9.0'
 ```
 
 4. Run: `source ~/.bashrc`
-5. Check by running `tclsh` or `wish` in the Terminal. Type `info patchlevel` — it should return "9.0.4. **Note:** If you have another version of Tcl/Tk installed in the system, adding these environment variables will shadow all calls to "default" `tclsh` and `wish` in the console, replacing them with ones from this distribution. To revert back, simply remove this block from `~/.bashrc` and call `source ~/.bashrc`
+5. Check by running `tclsh` or `wish` in the Terminal. Type `info patchlevel` — it should return "9.0.4". **Note:** If you have another version of Tcl/Tk installed in the system, adding these environment variables will shadow all calls to "default" `tclsh` and `wish` in the console, replacing them with ones from this distribution. To revert back, simply remove this block from `~/.bashrc` and call `source ~/.bashrc`
 
 6. Finally, _if you have root access_, make your life easier by configuring the Linux Linker. To make `LD_LIBRARY_PATH` discoverable when running .tcl scripts not from an already open terminal, but also via a file manager (which usually doesn't read `.bashrc` upon spawning the terminal for `-x` executable files), you need to let the Linux linker know about the new `tcl9` folder globally:
    1. Create a new config file: `sudo nano /etc/ld.so.conf.d/tcl9.conf`
@@ -60,7 +60,7 @@ From this moment on, you should be able to run tcl scripts via anything that spa
 
 **Important: this workaround is relevant only for the user-space installation**. System-wide install covers this with the global profile script. Still, bootstrapping tls cert paths in tcl scripts is good practice, especially if you're planning to distribute your scripts to users of all sorts of distros and want to ensure tls works right.
 
-Since this is a "portable" distribution, the `tls` package needs to be told where *your* Linux distro stores its Root Certificates (Trust Store). Place this tls bootstraping snippet at the top of any script making `https` requests. 
+Since this is a "portable" distribution, the `tls` package needs to be told where *your* Linux distro stores its Root Certificates (Trust Store). Place this tls bootstrapping snippet at the top of any script making `https` requests. 
 
 ```tcl
 # Dependencies
@@ -89,7 +89,7 @@ if {[info exists ::env(SSL_CERT_FILE)] && [file exists $::env(SSL_CERT_FILE)]} {
 
 ## System-Wise Installation
 
-If you have root permissions and know what you're doing, you can install Tcl/Tk 9 _system-wise_. This is a vastly superior option, since it solves the missing ssl certs problem, as well as makes Tcl/Tk 9 available to all users by default, including all the numerous packages this distribution comes with. Th following guide has been successfully used to install this bundle in several Linux distros: Linux Mint 22.2, Ubuntu 22.04 on PC, Arch Linux-based OrangePi OS (arm64) and a Debian-based RaspberryPi OS (arm64).
+If you have root permissions and know what you're doing, you can install Tcl/Tk 9 _system-wise_. This is a vastly superior option, since it solves the missing SSL certs problem, and also makes Tcl/Tk 9 available to all users by default, including all the numerous packages this distribution comes with. The following guide has been successfully used to install this bundle in several Linux distros: Linux Mint 22.2, Ubuntu 22.04 on PC, Arch Linux-based OrangePi OS (arm64) and a Debian-based RaspberryPi OS (arm64).
 
 1. Download a distribution ZIP for your architecture from [Releases](https://github.com/cgicoffee/tcl-builds-with-libxft/releases) and put it into `~/Downloads`
 2. Run the following commands to unzip the package to `/opt/` and configure it:
@@ -172,10 +172,10 @@ sudo ln -sf /opt/tcl9/bin/wish9.0 /usr/local/bin/wish
 puts "Tcl/Tk version: [info patchlevel]"
 proc get_all_packages {} {
     # Force a search of the filesystem
-    catch {package require __dummy__}    
+    catch {package require __dummy__}
     set pkgs [lsort -dictionary [package names]]
-    puts [format "%-25s | %-10s" "PACKAGE" "VERSION"]
-    puts [string repeat "-" 40]    
+    puts [format "%-25s | %-10s" "PACKAGE" "STATUS"]
+    puts [string repeat "-" 40]
     foreach pkg $pkgs {
         # Some core packages are built-in, others need version querying
         set version [package provide $pkg]
@@ -192,3 +192,5 @@ get_all_packages
 ```
 
 10. As a final test, if you're using a desktop environment with a file manager (like Caja, Nautilus, Thunar etc) — set up an association for .tcl files to execute with `tclsh` and try opening some of the files directly via the file manager, to see that the environment variables and packages are picked up correctly thanks to the linker configuration done above
+
+**Note:** In the future, to *update* your Tcl/Tk installation (i.e. from Tcl/Tk 9.0.3 to Tcl/Tk 9.0.4) you only need to redo steps 1-3.
